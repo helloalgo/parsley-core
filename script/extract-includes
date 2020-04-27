@@ -1,0 +1,9 @@
+#!/bin/bash
+if [ "$#" -gt 0 ]; then
+    cp -r /usr/include /src/script 
+else
+    cd ..
+    docker build . -t "realcore:dev" > /dev/null
+    docker run -v $(pwd):/src -w /src realcore:dev ./script/extract-includes p 
+fi
+
