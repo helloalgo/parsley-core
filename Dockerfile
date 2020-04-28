@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-RUN apt-get update -y && apt-get install -y gcc g++ default-jre default-jdk python3 python3-pip wget make
+RUN apt-get update -y && apt-get install -y gcc g++ default-jre default-jdk python3 python3-pip wget make cppcheck
 RUN apt-get install -y nano git vim
 RUN apt-get -y install software-properties-common
 RUN add-apt-repository ppa:longsleep/golang-backports
