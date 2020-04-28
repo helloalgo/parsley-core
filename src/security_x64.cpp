@@ -37,7 +37,7 @@ const auto BASIC_CALLS = std::vector<int>({
 });
 
 void basicFilter(scmp_filter_ctx* filter) {
-    printf("Generating seccomp filter basic");
+    printf("Generating seccomp filter basic\n");
     allowCalls(filter, BASIC_CALLS);
 }
 

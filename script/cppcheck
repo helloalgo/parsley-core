@@ -1,0 +1,5 @@
+#!/bin/bash
+
+cd ..
+docker build . -t "realcore:dev" > /dev/null
+docker run -v $(pwd):/src -w /src realcore:dev cppcheck -iscript -Iinclude .

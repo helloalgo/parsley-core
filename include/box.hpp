@@ -1,5 +1,7 @@
 #include <cstdint>
 
+#define EFORK 1
+
 class ProcLimit {
   public:
     uint32_t maxRss;
@@ -19,11 +21,12 @@ class ProcResult {
     bool     seccompViolation;
     int8_t   exitStatus;
     uint8_t  sysError;
+    uint16_t pid;
+    void log();
 };
 
 class ProcArgs {
   public:
-    char*    command;
     uint8_t  argc;
     char**   argv;
     int      fdIn;
@@ -31,4 +34,12 @@ class ProcArgs {
     int      fdErr;
     ProcArgs(int argc, char** argv);
     ~ProcArgs();
+    void log();
 };
+
+ProcResult* watchProcess(ProcLimit limit);
+ProcResult* runProcess(ProcArgs args, ProcLimit limit);
+
+// Read a row with the column `key` from /proc/(pid)/status.
+// Returns -1 if not found. 
+int processStatus(int pid, const char* key);
