@@ -4,4 +4,4 @@ cd ..
 # Build docker image
 docker build . -t "realcore:dev" > /dev/null
 
-docker run -v $(pwd):/src -w /src realcore:dev ./bin/realcore
+docker run --cap-add SYS_PTRACE -v $(pwd):/src -w /src realcore:dev ./bin/realcore

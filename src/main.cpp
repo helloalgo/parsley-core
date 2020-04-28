@@ -11,7 +11,7 @@ int main() {
     args->fdErr = fileno(ferr);
     args->log();
 
-    ProcLimit* limit = new ProcLimit(1000000, 100000000, "basic");
+    ProcLimit* limit = new ProcLimit(100000000, 1000000000, "basic");
     auto result = runProcess(*args, *limit);
     result->log();
 }

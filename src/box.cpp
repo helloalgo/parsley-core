@@ -43,16 +43,16 @@ ProcArgs::~ProcArgs() {
   delete[] this->argv;
 }
 
-int processStatus(int pid, const char* key) {
+long processStatus(int pid, const char* key) {
   FILE *fp;
   char command[BUFFER_SIZE], buf[BUFFER_SIZE];
-  int ret=-1;
+  long ret=-1;
   sprintf(command, "/proc/%d/status", pid);
   fp = fopen(command, "re");
   int keyLen = strlen(key);
   while (fp && fgets(buf, BUFFER_SIZE-1, fp)) {
     if (strncmp(buf, key, keyLen) == 0) {
-      sscanf(buf+keyLen+1, "%d", ret);
+      sscanf(buf+keyLen+1, "%ld", &ret);
     }
   }
   if (fp) {
@@ -63,9 +63,10 @@ int processStatus(int pid, const char* key) {
 
 void ProcResult::log() {
   printf(
-    "[ProcResult pid %d, code %d]\n  maxRss %d, walltime %d\n  Violations: mem %d, time %d, seccomp %d",
-    this->pid, this->exitStatus, this->maxRss, this->wallTime,
-    this->memViolation, this->timeViolation, this->seccompViolation
+    "[ProcResult pid %d, code %d]\n  mem %dB, walltime %dns\n  Violations: mem %d, time %d, seccomp %d\n  message: %s\n",
+    this->pid, this->exitStatus, this->mem, this->wallTime,
+    this->memViolation, this->timeViolation, this->seccompViolation,
+    this->message
   );
 }
 

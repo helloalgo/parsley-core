@@ -8,6 +8,9 @@
 #include <signal.h>
 #include <time.h>
 #include <unistd.h>
+#include <sys/ptrace.h>
+#include <sys/user.h>
+#include <linux/ptrace.h>
 #include <utility>
 #include "box.hpp"
 #include "security.hpp"
@@ -22,20 +25,25 @@ ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
     startTime = timeSpec.tv_nsec;
 
     result->pid = pid;
-    result->maxRss = 0;
+    result->mem = 0;
     result->memViolation = false;
     result->seccompViolation = false;
     result->timeViolation = false;
     
+    // ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD);
+
     do {
         pid2 = waitpid(pid, &status, WNOHANG);
-        // Check memory
-        getrusage(RUSAGE_CHILDREN, &usage);
-        result->maxRss = std::max(result->maxRss, usage.ru_maxrss);
-        if (result->maxRss > limit.maxRss) {
+        if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
+            ptrace(PTRACE_CONT, pid, NULL, SIGCONT);
+            pid2 = 0;
+            continue;
+        }
+        long rssNow = processStatus(pid, "VmHWM:");
+        result->mem = std::max((result->mem), rssNow<<10);
+        if (result->mem > limit.maxRss) {
             kill(pid, SIGKILL);
             result->memViolation = true;
-            break;
         }
         // Check time
         clock_gettime(CLOCK_REALTIME, &timeSpec);
@@ -43,15 +51,37 @@ ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
         if (result->wallTime > limit.wallTime) {
             kill(pid, SIGKILL);
             result->timeViolation = true;
-            break;
         }
     } while (pid2 == 0);
-    waitpid(pid, &status, WNOHANG);
-    if (!WIFEXITED(status)) {
-        if (!(result->memViolation || result->timeViolation)) {
+
+    #ifdef DEBUG
+    printf("STOPPED %d SIGNALED %d EXITED %d STOPSIG %d TERMSIG %d\n", WIFSTOPPED(status), WIFSIGNALED(status), WIFEXITED(status), WSTOPSIG(status), WTERMSIG(status));
+    #endif
+
+    result->message = new char[512];
+    if (WIFSIGNALED(status)) {
+        if (WTERMSIG(status) == SIGKILL) {
+            // Killed by watchProcess; should be memory or time
+            if (result->memViolation) {
+                sprintf(result->message, "memory limit exceeded");
+            } else if (result->timeViolation) {
+                sprintf(result->message, "time limit exceeded");
+            } else {
+                fprintf(stderr, "PID %d: SIGKILL but not caught on result\n", pid);
+                sprintf(result->message, "system error: unexpected SIGKILL");
+            }
+        } else if(WTERMSIG(status) == 31) {
+            // Killed by seccomp; see man page
             result->seccompViolation = true;
+            user_regs_struct reg;
+            ptrace(PTRACE_GETREGS, pid, NULL, &reg);
+            fprintf(stderr, "PID %d: seccomp violation: syscall %ld\n", pid, reg.orig_rax);
+            sprintf(result->message, "seccomp violation: syscall %ld", reg.orig_rax);
         }
+    } else {
+        sprintf(result->message, "success");
     }
+
     result->exitStatus = WEXITSTATUS(status);
     return result;
 }
@@ -74,8 +104,18 @@ ProcResult* runProcess(ProcArgs args, const ProcLimit limit) {
     dup2(args.fdIn, 0);
     dup2(args.fdOut, 1);
     dup2(args.fdErr, 2);
-    close(args.fdIn);
-    close(args.fdOut);
-    close(args.fdErr);
-    execvp(*args.argv, args.argv);
+    int traceResult = ptrace(PTRACE_TRACEME, 0, NULL, NULL);
+    if (traceResult != 0) {
+        printf("fatal: failed to init ptrace - error %d", traceResult);
+        fflush(stdout);
+        exit(-1);
+    }
+    prctl(PR_SET_NO_NEW_PRIVS, 1);
+    int scmpResult = seccomp_load(scmpFilter);
+    if (scmpResult != 0) {
+        printf("fatal: failed to load seccomp filter - error %d", scmpResult);
+        fflush(stdout);
+        exit(-1);
+    }
+    execv(*args.argv, args.argv);
 }

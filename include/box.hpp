@@ -14,14 +14,15 @@ class ProcLimit {
 
 class ProcResult {
   public:
-    long maxRss;
-    int64_t wallTime;
+    long     mem;
+    int64_t  wallTime;
     bool     memViolation;
     bool     timeViolation;
     bool     seccompViolation;
     int8_t   exitStatus;
     uint8_t  sysError;
     uint16_t pid;
+    char*    message;
     void log();
 };
 
@@ -42,4 +43,4 @@ ProcResult* runProcess(ProcArgs args, ProcLimit limit);
 
 // Read a row with the column `key` from /proc/(pid)/status.
 // Returns -1 if not found. 
-int processStatus(int pid, const char* key);
+long processStatus(int pid, const char* key);

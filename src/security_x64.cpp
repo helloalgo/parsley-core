@@ -32,11 +32,12 @@ const auto BASIC_CALLS = std::vector<int>({
     SCMP_SYS(set_robust_list),
     SCMP_SYS(splice),
     SCMP_SYS(getrandom),
-    SCMP_SYS(openat)
+    SCMP_SYS(openat),
+    SCMP_SYS(times),
     -1
 });
 
-void basicFilter(scmp_filter_ctx* filter) {
+void basicFilter(scmp_filter_ctx filter) {
     printf("Generating seccomp filter basic\n");
     allowCalls(filter, BASIC_CALLS);
 }
@@ -48,9 +49,10 @@ scmp_filter_ctx generateFilter(char* key) {
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sigreturn), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(execve), 0);
 
     if (strncmp(key, "basic", 5)==0) {
-        basicFilter(&ctx);
+        basicFilter(ctx);
     }
     return ctx;
 }
