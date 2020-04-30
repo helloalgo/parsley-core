@@ -30,17 +30,15 @@ ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
     result->seccompViolation = false;
     result->timeViolation = false;
     
-    // ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD);
+    ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD | PTRACE_O_TRACEEXIT);
 
     do {
         pid2 = waitpid(pid, &status, WNOHANG);
-        if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
-            ptrace(PTRACE_CONT, pid, NULL, SIGCONT);
-            pid2 = 0;
-            continue;
-        }
-        long rssNow = processStatus(pid, "VmHWM:");
-        result->mem = std::max((result->mem), rssNow<<10);
+        getrusage(RUSAGE_CHILDREN, &usage);
+        // long rssNow = processStatus(pid, "VmPeak:");
+        // long rssNow = pageFaultMem(usage);
+        long rssNow = usage.ru_maxrss << 10;
+        result->mem = std::max((result->mem), rssNow);
         if (result->mem > limit.maxRss) {
             kill(pid, SIGKILL);
             result->memViolation = true;
@@ -51,6 +49,11 @@ ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
         if (result->wallTime > limit.wallTime) {
             kill(pid, SIGKILL);
             result->timeViolation = true;
+        }
+        if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
+            ptrace(PTRACE_CONT, pid, NULL, SIGCONT);
+            pid2 = 0;
+            continue;
         }
     } while (pid2 == 0);
 
@@ -70,13 +73,17 @@ ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
                 fprintf(stderr, "PID %d: SIGKILL but not caught on result\n", pid);
                 sprintf(result->message, "system error: unexpected SIGKILL");
             }
-        } else if(WTERMSIG(status) == 31) {
+        } else if (WTERMSIG(status) == 31) {
             // Killed by seccomp; see man page
             result->seccompViolation = true;
             user_regs_struct reg;
             ptrace(PTRACE_GETREGS, pid, NULL, &reg);
             fprintf(stderr, "PID %d: seccomp violation: syscall %ld\n", pid, reg.orig_rax);
             sprintf(result->message, "seccomp violation: syscall %ld", reg.orig_rax);
+        } else if (WTERMSIG(status) == SIGXFSZ) {
+            // RLIMIT_FSIZE limit
+            result->fsizeViolation = true;
+            sprintf(result->message, "write limit exceeded");
         }
     } else {
         sprintf(result->message, "success");
@@ -110,6 +117,10 @@ ProcResult* runProcess(ProcArgs args, const ProcLimit limit) {
         fflush(stdout);
         exit(-1);
     }
+    rlimit fLimit;
+    fLimit.rlim_cur = limit.fileSize;
+    fLimit.rlim_max = limit.fileSize;
+    setrlimit(RLIMIT_FSIZE, &fLimit);
     prctl(PR_SET_NO_NEW_PRIVS, 1);
     int scmpResult = seccomp_load(scmpFilter);
     if (scmpResult != 0) {

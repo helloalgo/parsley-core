@@ -1,4 +1,5 @@
 #include <cstdio>
+#include <cstring>
 #include "box.hpp"
 
 int main() {
@@ -11,7 +12,7 @@ int main() {
     args->fdErr = fileno(ferr);
     args->log();
 
-    ProcLimit* limit = new ProcLimit(100000000, 1000000000, "basic");
+    ProcLimit* limit = new ProcLimit(100000000, 1000000000, 1000000000, "basic");
     auto result = runProcess(*args, *limit);
     result->log();
 }

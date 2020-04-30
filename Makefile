@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -W -Wall -O2 -Iinclude -fpermissive
+CFLAGS = -W -Wall -O2 -Iinclude -fpermissive 
 
 CC_PREFIX = ./src/
 INC_PREFIX = ./include/

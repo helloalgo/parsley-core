@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <sys/resource.h>
 
 #define EFORK 1
 
@@ -6,9 +7,10 @@ class ProcLimit {
   public:
     uint32_t maxRss;
     int64_t wallTime;
+    int64_t fileSize;
     char* secPolicy;
     void explain();
-    ProcLimit(uint32_t maxRss, int64_t wallTime, const char* secPolicy);
+    ProcLimit::ProcLimit(uint32_t maxRss, int64_t wallTime, int64_t fileSize, const char* secPolicy);
     ~ProcLimit();
 };
 
@@ -19,6 +21,7 @@ class ProcResult {
     bool     memViolation;
     bool     timeViolation;
     bool     seccompViolation;
+    bool     fsizeViolation;
     int8_t   exitStatus;
     uint8_t  sysError;
     uint16_t pid;
@@ -44,3 +47,4 @@ ProcResult* runProcess(ProcArgs args, ProcLimit limit);
 // Read a row with the column `key` from /proc/(pid)/status.
 // Returns -1 if not found. 
 long processStatus(int pid, const char* key);
+long pageFaultMem(rusage& usage);
