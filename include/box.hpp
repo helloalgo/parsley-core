@@ -5,12 +5,12 @@
 
 class ProcLimit {
   public:
-    uint32_t maxRss;
-    int64_t wallTime;
-    int64_t fileSize;
-    char* secPolicy;
+    uint32_t maxRss;      // Maximum RSS (Resident Set Size), in bytes
+    int64_t wallTime;     // Maximum running time, in nanoseconds
+    int64_t fileSize;     // Maximum file write size, in bytes
+    char* secPolicy;      // Seccomp policy key
     void explain();
-    ProcLimit::ProcLimit(uint32_t maxRss, int64_t wallTime, int64_t fileSize, const char* secPolicy);
+    ProcLimit(uint32_t maxRss, int64_t wallTime, int64_t fileSize, const char* secPolicy);
     ~ProcLimit();
 };
 

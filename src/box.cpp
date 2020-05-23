@@ -20,7 +20,7 @@ ProcLimit::~ProcLimit() {
 }
 
 void ProcLimit::explain() {
-  printf("ProcLimit wallTime %ld(us), mem %d(B), fileWrite %d(B), secPolicy %s",
+  printf("ProcLimit wallTime %ld(us), mem %u(B), fileWrite %ld(B), secPolicy %s",
     this->wallTime, this->maxRss, this->fileSize, this->secPolicy);
 }
 
@@ -70,7 +70,7 @@ long pageFaultMem(rusage& usage) {
 
 void ProcResult::log() {
   printf(
-    "[ProcResult pid %d, code %d]\n  mem %dKB, walltime %dns\n  Violations: mem %d, time %d, seccomp %d, write %d\n  message: %s\n",
+    "[ProcResult pid %d, code %d]\n  mem %ldKB, walltime %ldns\n  Violations: mem %d, time %d, seccomp %d, write %d\n  message: %s\n",
     this->pid, this->exitStatus, (this->mem)>>10, this->wallTime,
     this->memViolation, this->timeViolation, this->seccompViolation, this->fsizeViolation,
     this->message

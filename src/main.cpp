@@ -4,7 +4,7 @@
 
 int main() {
     printf("Starting parsley\n");
-    char command[30] = "/src/tests/sample_hello";
+    char command[30] = "/src/tests/ls";
     FILE* fout = fopen("test-out", "w");
     FILE* ferr = fopen("test-err", "w");
     ProcArgs* args = new ProcArgs(1, new char*[1]{command});

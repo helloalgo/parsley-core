@@ -10,7 +10,6 @@
 #include <unistd.h>
 #include <sys/ptrace.h>
 #include <sys/user.h>
-#include <linux/ptrace.h>
 #include <utility>
 #include "box.hpp"
 #include "security.hpp"
@@ -78,8 +77,8 @@ ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
             result->seccompViolation = true;
             user_regs_struct reg;
             ptrace(PTRACE_GETREGS, pid, NULL, &reg);
-            fprintf(stderr, "PID %d: seccomp violation: syscall %ld\n", pid, reg.orig_rax);
-            sprintf(result->message, "seccomp violation: syscall %ld", reg.orig_rax);
+            fprintf(stderr, "PID %d: seccomp violation: syscall %llu\n", pid, reg.orig_rax);
+            sprintf(result->message, "seccomp violation: syscall %llu", reg.orig_rax);
         } else if (WTERMSIG(status) == SIGXFSZ) {
             // RLIMIT_FSIZE limit
             result->fsizeViolation = true;
@@ -129,4 +128,6 @@ ProcResult* runProcess(ProcArgs args, const ProcLimit limit) {
         exit(-1);
     }
     execv(*args.argv, args.argv);
+    // Should not reach here
+    exit(-1);
 }
