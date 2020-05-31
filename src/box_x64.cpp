@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -18,7 +19,8 @@ ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
     ProcResult* result = new ProcResult();
     rusage usage;
     int status, pid2;
-    long startTime;
+
+    auto startTime = std::chrono::steady_clock::now();
 
     result->pid = pid;
     result->mem = 0;
@@ -48,9 +50,9 @@ ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
             break;
         }
         // Check time
-        result->wallTime = (usage.ru_utime.tv_sec + usage.ru_stime.tv_sec) * 1000000 + usage.ru_utime.tv_usec + usage.ru_stime.tv_usec;
-        printf("%d\n", usage.ru_utime.tv_usec);
-        if (result->wallTime > limit.wallTime) {
+        auto timeDuration = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now()-startTime).count();
+        result->wallTime = timeDuration;
+        if (timeDuration > limit.wallTime) {
             kill(pid, SIGKILL);
             result->timeViolation = true;
             break;
