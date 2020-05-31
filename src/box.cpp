@@ -70,8 +70,8 @@ long pageFaultMem(rusage& usage) {
 
 void ProcResult::log() {
   printf(
-    "[ProcResult pid %d, code %d]\n  mem %ldKB, walltime %ldns\n  Violations: mem %d, time %d, seccomp %d, write %d\n  message: %s\n",
-    this->pid, this->exitStatus, (this->mem)>>10, this->wallTime,
+    "[ProcResult pid %d, code %d]\n  mem %ldKB, walltime %ldms\n  Violations: mem %d, time %d, seccomp %d, write %d\n  message: %s\n",
+    this->pid, this->exitStatus, (this->mem)>>10, (this->wallTime)/1000,
     this->memViolation, this->timeViolation, this->seccompViolation, this->fsizeViolation,
     this->message
   );

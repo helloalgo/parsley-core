@@ -17,11 +17,8 @@
 ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
     ProcResult* result = new ProcResult();
     rusage usage;
-    timespec timeSpec;
     int status, pid2;
     long startTime;
-    clock_gettime(CLOCK_REALTIME, &timeSpec);
-    startTime = timeSpec.tv_nsec;
 
     result->pid = pid;
     result->mem = 0;
@@ -31,8 +28,15 @@ ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
     
     ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD | PTRACE_O_TRACEEXIT);
 
-    do {
+    while (true) {
         pid2 = waitpid(pid, &status, WNOHANG);
+        if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
+            ptrace(PTRACE_CONT, pid, NULL, SIGCONT);
+            // continue;
+        }
+        if (pid2 != 0) {
+            break;
+        }
         getrusage(RUSAGE_CHILDREN, &usage);
         // long rssNow = processStatus(pid, "VmPeak:");
         // long rssNow = pageFaultMem(usage);
@@ -41,20 +45,17 @@ ProcResult* watchProcess(pid_t pid, const ProcLimit limit) {
         if (result->mem > limit.maxRss) {
             kill(pid, SIGKILL);
             result->memViolation = true;
+            break;
         }
         // Check time
-        clock_gettime(CLOCK_REALTIME, &timeSpec);
-        result->wallTime = timeSpec.tv_nsec - startTime;
+        result->wallTime = (usage.ru_utime.tv_sec + usage.ru_stime.tv_sec) * 1000000 + usage.ru_utime.tv_usec + usage.ru_stime.tv_usec;
+        printf("%d\n", usage.ru_utime.tv_usec);
         if (result->wallTime > limit.wallTime) {
             kill(pid, SIGKILL);
             result->timeViolation = true;
+            break;
         }
-        if (WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
-            ptrace(PTRACE_CONT, pid, NULL, SIGCONT);
-            pid2 = 0;
-            continue;
-        }
-    } while (pid2 == 0);
+    }
 
     #ifdef DEBUG
     printf("STOPPED %d SIGNALED %d EXITED %d STOPSIG %d TERMSIG %d\n", WIFSTOPPED(status), WIFSIGNALED(status), WIFEXITED(status), WSTOPSIG(status), WTERMSIG(status));
