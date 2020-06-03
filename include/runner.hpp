@@ -14,7 +14,7 @@ struct RunArgs {
     long max_memory_size; // KB
     long max_stack_size;  // KB
 
-    const char* seccomp_policy;
+    char* seccomp_policy;
     bool use_ptrace;
     char** args;
 
@@ -66,7 +66,7 @@ struct RunResult {
 };
 
 void allowCalls(scmp_filter_ctx ctx, std::vector<int> calls);
-scmp_filter_ctx generateFilter(char* key);
+scmp_filter_ctx generateFilter(const char* key);
 
 void run_child(RunArgs args, RunResult &result);
 void child_process(const RunArgs& args);

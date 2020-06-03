@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <cstring>
+#include "cxxopts.hpp"
 #include "runner.hpp"
 #include "util.hpp"
 

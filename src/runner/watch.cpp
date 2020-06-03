@@ -60,7 +60,7 @@ void watch_child(pid_t pid, const RunArgs& args, RunResult &result) {
     if (result.term_signal == SIGSEGV) {
         if (args.max_memory_size > 0 && result.memory > args.max_memory_size) {
             result.violation = RunViolation::MEMORY;
-            snprintf("result.message", BUF_SIZE, "Memory Limit Exceeded");
+            snprintf(result.message, BUF_SIZE, "Memory Limit Exceeded");
         } else {
             result.violation = RunViolation::RUNTIME;
             snprintf(result.message, BUF_SIZE, "Runtime Error (SIGSEGV)");
@@ -73,7 +73,7 @@ void watch_child(pid_t pid, const RunArgs& args, RunResult &result) {
         if (args.use_ptrace) {
             user_regs_struct reg;
             ptrace(PTRACE_GETREGS, pid, NULL, &reg);
-            snprintf(result.message, BUF_SIZE, "seccomp violation: syscall %ld", reg.orig_rax);
+            snprintf(result.message, BUF_SIZE, "seccomp violation: syscall %llu", reg.orig_rax);
         } else {
             snprintf(result.message, BUF_SIZE, "seccomp violation");
         }

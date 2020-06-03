@@ -48,7 +48,7 @@ void basicFilter(scmp_filter_ctx filter) {
     allowCalls(filter, BASIC_CALLS);
 }
 
-scmp_filter_ctx generateFilter(char* key) {
+scmp_filter_ctx generateFilter(const char* key) {
     scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_KILL);
 
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 0);

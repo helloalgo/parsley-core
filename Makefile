@@ -8,7 +8,7 @@ BUILD_PREFIX = ./bin
 CC_LINKS = -lseccomp -lpthread
 
 TARGET = realcore
-OBJECTS = judge.o main.o runner/child.o runner/seccomp.o runner/timeout.o runner/watch.o util.o
+OBJECTS = main.o runner/child.o runner/seccomp.o runner/timeout.o runner/watch.o util.o
 # HEADERS = box.hpp judge.hpp runner.hpp security.hpp timeout.
 
 $(TARGET): $(OBJECTS)
