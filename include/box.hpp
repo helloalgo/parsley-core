@@ -9,6 +9,7 @@ class ProcLimit {
     int64_t wallTime;     // Maximum running time, in microseconds
     int64_t fileSize;     // Maximum file write size, in bytes
     char* secPolicy;      // Seccomp policy key
+    bool ptrace;
     void explain();
     ProcLimit(uint32_t maxRss, int64_t wallTime, int64_t fileSize, const char* secPolicy);
     ~ProcLimit();

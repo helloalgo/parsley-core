@@ -3,3 +3,5 @@
 cd ..
 docker build . -t "realcore:dev" > /dev/null
 docker run -v $(pwd):/src -w /src realcore:dev cppcheck -iscript -Iinclude .
+./build
+docker run -v $(pwd):/src -w /src realcore:dev valgrind --tool=callgrind ./bin/realcore

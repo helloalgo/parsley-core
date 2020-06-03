@@ -6,3 +6,4 @@ script/include
 tests/*
 !tests/*.*
 test-*
+callgrind*

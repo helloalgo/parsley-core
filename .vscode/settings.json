@@ -2,6 +2,7 @@
   "files.associations": {
     "*.html": "html",
     "vector": "cpp",
-    "chrono": "cpp"
+    "chrono": "cpp",
+    "cstring": "cpp"
   }
 }
