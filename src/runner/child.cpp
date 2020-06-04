@@ -6,7 +6,6 @@
 #include <signal.h>
 #include <unistd.h>
 #include <sys/prctl.h>
-#include <sys/ptrace.h>
 #include <sys/resource.h>
 #include "runner.hpp"
 
@@ -67,11 +66,6 @@ void child_process(const RunArgs& args, SharedError* error_mem) {
     }
     if (args.error != nullptr) {
         safe_dup2(fileno(args.error), STDERR_FILENO);
-    }
-    if (args.use_ptrace) {
-        if (ptrace(PTRACE_TRACEME, 0, NULL, NULL) != 0) {
-            exitWithError(RunError::PTRACE_FAILED);
-        }
     }
     prctl(PR_SET_NO_NEW_PRIVS, 1);
     if (seccomp_load(scmpFilter) != 0) {

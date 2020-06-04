@@ -5,7 +5,6 @@
 #include <pthread.h>
 #include <signal.h>
 #include <sys/wait.h>
-#include <sys/ptrace.h>
 #include <sys/resource.h>
 #include <sys/mman.h>
 #include <sys/user.h>
@@ -17,24 +16,14 @@
 
 void watch_child(pid_t pid, const RunArgs& args, RunResult &result, const SharedError* error_mem) {
     auto startTime = std::chrono::steady_clock::now();
-    if (args.use_ptrace) {
-        ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD | PTRACE_O_TRACEEXIT);
-    }
     rusage usage;
     int status;
-    while (true) {
-        pid_t waitResult = wait4(pid, &status, WSTOPPED, &usage);
-        if (waitResult == -1) {
-            kill(pid, SIGKILL);
-            result.error = RunError::WAIT_FAILED;
-            snprintf(result.message, BUF_SIZE, "Error: WAIT_FAILED: %s", strerror(errno));
-            return;
-        }
-        if (args.use_ptrace && WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP) {
-            ptrace(PTRACE_CONT, pid, NULL, SIGCONT);
-            continue;
-        }
-        break;
+    pid_t waitResult = wait4(pid, &status, WSTOPPED, &usage);
+    if (waitResult == -1) {
+        kill(pid, SIGKILL);
+        result.error = RunError::WAIT_FAILED;
+        snprintf(result.message, BUF_SIZE, "Error: WAIT_FAILED: %s", strerror(errno));
+        return;
     }
     auto endTime = std::chrono::steady_clock::now();
     result.real_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
@@ -46,7 +35,7 @@ void watch_child(pid_t pid, const RunArgs& args, RunResult &result, const Shared
     result.stop_signal = (WIFSTOPPED(status) != 0) ? WSTOPSIG(status) : 0;
     result.term_signal = (WIFSIGNALED(status) != 0) ? WTERMSIG(status) : 0;
     result.exit_code = (WIFEXITED(status) != 0) ? WEXITSTATUS(status) : 0;
-    if (result.stop_signal == SIGUSR1) {
+    if (result.stop_signal == SIGUSR1 || result.term_signal == SIGUSR1) {
         result.error = (RunError)result.exit_code;
         snprintf(result.message, BUF_SIZE, "Error: RunError %d (errno: %s)", error_mem->error, strerror(error_mem->proc_errno));
         kill(pid, SIGKILL);
@@ -72,13 +61,7 @@ void watch_child(pid_t pid, const RunArgs& args, RunResult &result, const Shared
     if (result.term_signal == 31) {
         // Killed by seccomp; see man page
         result.violation = RunViolation::SECCOMP;
-        if (args.use_ptrace) {
-            user_regs_struct reg;
-            ptrace(PTRACE_GETREGS, pid, NULL, &reg);
-            snprintf(result.message, BUF_SIZE, "seccomp violation: syscall %llu", reg.orig_rax);
-        } else {
-            snprintf(result.message, BUF_SIZE, "seccomp violation");
-        }
+        snprintf(result.message, BUF_SIZE, "seccomp violation");
         return;
     }
     if (result.term_signal == SIGXFSZ && args.max_write_size > 0) {
