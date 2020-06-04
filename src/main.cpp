@@ -62,5 +62,4 @@ int main(int argc, char** argv) {
     RunResult res;
     run_child(args, res);
     describe_result(res);
-
 }

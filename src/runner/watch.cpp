@@ -7,6 +7,7 @@
 #include <sys/wait.h>
 #include <sys/ptrace.h>
 #include <sys/resource.h>
+#include <sys/mman.h>
 #include <sys/user.h>
 #include <unistd.h>
 #include "runner.hpp"
@@ -14,7 +15,7 @@
 
 #define BUF_SIZE 512
 
-void watch_child(pid_t pid, const RunArgs& args, RunResult &result) {
+void watch_child(pid_t pid, const RunArgs& args, RunResult &result, const SharedError* error_mem) {
     auto startTime = std::chrono::steady_clock::now();
     if (args.use_ptrace) {
         ptrace(PTRACE_SETOPTIONS, pid, NULL, PTRACE_O_TRACESYSGOOD | PTRACE_O_TRACEEXIT);
@@ -45,9 +46,10 @@ void watch_child(pid_t pid, const RunArgs& args, RunResult &result) {
     result.stop_signal = (WIFSTOPPED(status) != 0) ? WSTOPSIG(status) : 0;
     result.term_signal = (WIFSIGNALED(status) != 0) ? WTERMSIG(status) : 0;
     result.exit_code = (WIFEXITED(status) != 0) ? WEXITSTATUS(status) : 0;
-    if (result.term_signal == SIGUSR1) {
+    if (result.stop_signal == SIGUSR1) {
         result.error = (RunError)result.exit_code;
-        snprintf(result.message, BUF_SIZE, "Error: RunError %d", result.exit_code);
+        snprintf(result.message, BUF_SIZE, "Error: RunError %d (errno: %s)", error_mem->error, strerror(error_mem->proc_errno));
+        kill(pid, SIGKILL);
         return;
     }
     // Not our fault now
@@ -105,11 +107,18 @@ void watch_child(pid_t pid, const RunArgs& args, RunResult &result) {
 }
 
 void run_child(RunArgs args, RunResult &result) {
-    pid_t pid = fork();
     result.complete = false;
     result.violation = RunViolation::NONE;
     result.error = RunError::SUCCESS;
     result.message = new char[BUF_SIZE];
+    // Shared memory (for passing errors)
+    auto error_mem = (SharedError*)mmap(0, sizeof(SharedError), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
+    if ((long long)error_mem == -1) {
+        result.error = RunError::MMAP_FAILED;
+        snprintf(result.message, BUF_SIZE, "Error: MMAP_FAILED: %s", strerror(errno));
+        return;
+    }
+    pid_t pid = fork();
     if (pid < 0) {
         result.error = RunError::FORK_FAILED;
         snprintf(result.message, BUF_SIZE, "Error: FORK_FAILED: %s", strerror(errno));
@@ -117,9 +126,10 @@ void run_child(RunArgs args, RunResult &result) {
     }
     result.pid = pid;
     if (pid == 0) {
-        child_process(args);
+        child_process(args, error_mem);
         return;
     }
+    // Real time watcher
     pthread_t tid = 0;
     timeout_killer_args killer_args;
     killer_args.pid = pid;
@@ -129,5 +139,6 @@ void run_child(RunArgs args, RunResult &result) {
         snprintf(result.message, BUF_SIZE, "Error: PTHREAD_FORK_FAILED: %s", strerror(errno));
         return;
     }
-    watch_child(pid, args, result);
+    watch_child(pid, args, result, error_mem);
+    munmap(error_mem, sizeof(SharedError));
 }

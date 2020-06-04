@@ -10,11 +10,14 @@
 #include <sys/resource.h>
 #include "runner.hpp"
 
+SharedError* shared_error;
+
 void exitWithError(RunError error) {
+    shared_error->error = error;
+    shared_error->proc_errno = errno;
     fflush(stdout);
     fflush(stderr);
     raise(SIGUSR1);
-    exit(error);
 }
 void safe_setrlimit(int type, const rlimit &limit) {
     if (setrlimit(type, &limit) != 0) {
@@ -28,7 +31,8 @@ void safe_dup2(int src, int dst) {
     }
 }
 
-void child_process(const RunArgs& args) {
+void child_process(const RunArgs& args, SharedError* error_mem) {
+    shared_error = error_mem;
     auto scmpFilter = generateFilter(args.seccomp_policy);
     if (args.max_stack_size > 0) {
         rlimit lim;

@@ -43,7 +43,8 @@ enum RunError {
     SETRLIMIT_FAILED = 6,
     SETUID_FAILED = 7,
     EXEC_FAILED = 8,
-    DUP_FAILED = 9
+    DUP_FAILED = 9,
+    MMAP_FAILED = 10
 };
 
 struct RunResult {
@@ -65,11 +66,16 @@ struct RunResult {
     int term_signal;
 };
 
+struct SharedError {
+    RunError error;
+    int proc_errno;
+};
+
 void allowCalls(scmp_filter_ctx ctx, std::vector<int> calls);
 scmp_filter_ctx generateFilter(const char* key);
 
 void run_child(RunArgs args, RunResult &result);
-void child_process(const RunArgs& args);
-void watch_child(const RunArgs& args, RunResult &result);
+void child_process(const RunArgs& args, SharedError* error_mem);
+void watch_child(const RunArgs& args, RunResult &result, const SharedError* error_mem);
 
 #endif
