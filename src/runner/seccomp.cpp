@@ -44,11 +44,14 @@ const auto BASIC_CALLS = std::vector<int>({
 });
 
 void basicFilter(scmp_filter_ctx filter) {
-    printf("Generating seccomp filter basic\n");
     allowCalls(filter, BASIC_CALLS);
 }
 
 scmp_filter_ctx generateFilter(const char* key) {
+    if (strncmp(key, "none", 5) == 0) {
+        printf("Skipping seccomp filters!\n");
+        return seccomp_init(SCMP_ACT_ALLOW);
+    }
     scmp_filter_ctx ctx = seccomp_init(SCMP_ACT_KILL);
 
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 0);
@@ -57,8 +60,11 @@ scmp_filter_ctx generateFilter(const char* key) {
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(execve), 0);
 
-    if (strncmp(key, "basic", 5)==0) {
+    if (strncmp(key, "basic", 6)==0) {
+        printf("Applying seccomp filter basic\n");
         basicFilter(ctx);
+        return ctx;
     }
+    printf("Filter not found!\n");
     return ctx;
 }
