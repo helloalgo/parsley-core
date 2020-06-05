@@ -15,13 +15,14 @@ int main(int argc, char** argv) {
         ("s,stack", "Maximum stack size in kilobytes", cxxopts::value<long>()->default_value("131072"))
         ("m,mem", "Maximum memory in kilobytes", cxxopts::value<long>()->default_value("131072"))
         ("w,write", "Maximum write size in kilobytes", cxxopts::value<long>()->default_value("0"))
-        ("ptrace", "Use ptrace", cxxopts::value<bool>()->default_value("true"))
-        ("seccomp", "Seccomp policy string", cxxopts::value<std::string>()->default_value("basic"))
+        ("P,ptrace", "Use ptrace", cxxopts::value<bool>()->default_value("true"))
+        ("S,seccomp", "Seccomp policy string", cxxopts::value<std::string>()->default_value("basic"))
+        ("I,stdin", "Path to read stdin of child", cxxopts::value<std::string>())
+        ("O,stdout", "Path to write stdout of child", cxxopts::value<std::string>())
+        ("E,stderr", "Path to write stderr of child", cxxopts::value<std::string>())
+        ("D,debug", "Output debug information to stdout", cxxopts::value<bool>()->default_value("false"))
         ("h,help", "Print usage")
         ("args", "Command arguments", cxxopts::value<std::vector<std::string>>())
-        ("stdin", "Path to read stdin of child", cxxopts::value<std::string>())
-        ("stdout", "Path to write stdout of child", cxxopts::value<std::string>())
-        ("stderr", "Path to write stderr of child", cxxopts::value<std::string>())
     ;
     options.parse_positional({"args"});
     int original_argc = argc;
@@ -30,7 +31,10 @@ int main(int argc, char** argv) {
         printf("%s\n", options.help().c_str());
         exit(0);
     }
+    set_log_debug(result["debug"].as<bool>());
+
     RunArgs args;
+
     if (result.count("stdin")) {
         args.input = fopen(result["stdin"].as<std::string>().c_str(), "w");
     } else {
@@ -59,7 +63,8 @@ int main(int argc, char** argv) {
     args.max_write_size = result["write"].as<long>();
     args.use_ptrace = result["ptrace"].as<bool>();
     args.seccomp_policy = (char*)result["seccomp"].as<std::string>().c_str();
+    describe(args);
     RunResult res;
     run_child(args, res);
-    describe_result(res);
+    describe(res);
 }
