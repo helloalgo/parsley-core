@@ -82,9 +82,10 @@ int main(int argc, char** argv) {
                 {"stopped", res.stopped},
                 {"stop_signal", res.stop_signal},
                 {"term_signal", res.term_signal},
-                {"error", res.error},
-                {"exit_code", res.exit_code}
             }},
+            {"error", res.error},
+            {"exit_code", res.exit_code},
+            {"violation", res.violation},
             {"cpu_time", res.cpu_time},
             {"wall_time", res.real_time},
             {"memory", res.memory}
