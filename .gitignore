@@ -8,3 +8,8 @@ tests/*
 test-*
 callgrind*
 *.log
+include/json.hpp
+include/cxxopts.hpp
+result.json
+
+__pycache__
