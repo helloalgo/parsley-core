@@ -5,3 +5,4 @@ cd ..
 docker build . -t "realcore:dev" > /dev/null
 
 docker run -t --cap-add SYS_PTRACE -v $(pwd):/src -w /src realcore:dev make all
+exit $?
