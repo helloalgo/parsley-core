@@ -19,6 +19,17 @@ Usage:
 ```
 
 # Getting Started
+## Dependencies
+- [cxxopts](https://github.com/jarro2783/cxxopts)
+- [nlohmann/json](https://github.com/nlohmann/json)
+
+Since we only use header-only libraries, we do not use a package manager.
+Simply `wget` the files into the include directory.
+```bash
+cd script && ./install-deps
+```
+
+## Using headers
 The preferred method for building and running is via Docker.
 Extract header files from the actual environment, and set your editor or IDE to use them.
 ```bash
@@ -27,7 +38,7 @@ cd script && ./extract-includes
 ```
 Configuration files for vscode is included.
 
-# Build and run
+## Build and run
 ```bash
 cd script && ./build
 ./run-dev
