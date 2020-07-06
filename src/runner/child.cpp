@@ -32,7 +32,7 @@ void safe_dup2(int src, int dst) {
 
 void child_process(const RunArgs& args, SharedError* error_mem) {
     shared_error = error_mem;
-    auto scmpFilter = generateFilter(args.seccomp_policy);
+    auto scmpFilter = generateFilter(args.seccomp_policy, *(args.args));
     if (args.max_stack_size > 0) {
         rlimit lim;
         lim.rlim_cur = lim.rlim_max = (rlim_t)(args.max_stack_size<<10);

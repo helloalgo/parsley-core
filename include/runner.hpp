@@ -72,7 +72,7 @@ struct SharedError {
 };
 
 void allowCalls(scmp_filter_ctx ctx, std::vector<int> calls);
-scmp_filter_ctx generateFilter(const char* key);
+scmp_filter_ctx generateFilter(const char* key, const char* execPath);
 
 void run_child(RunArgs args, RunResult &result);
 void child_process(const RunArgs& args, SharedError* error_mem);

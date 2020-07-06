@@ -7,6 +7,6 @@ do
   binfile=$(echo "$file" | sed 's/\.c//')
   echo "Testing $file"
   docker run -v $(pwd):/src -w /src realcore:dev gcc /src/tests/$file -o /src/tests/$binfile
-  docker run --cap-add SYS_PTRACE -v $(pwd):/src -w /src realcore:dev /src/bin/realcore /src/tests/$binfile
-  cat parsley_runner.log
+  docker run --cap-add SYS_PTRACE -v $(pwd):/src -w /src -it realcore:dev /src/bin/realcore /src/tests/$binfile
+  cat -n parsley_runner.log
 done

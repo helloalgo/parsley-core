@@ -4,8 +4,7 @@
 #include "runner.hpp"
 
 void allowCalls(scmp_filter_ctx ctx, int calls[]) {
-    int length = sizeof(calls) / sizeof(int);
-    for (int i=0;i<length;i++) {
+    for (int i=0; calls[i]!=-1; i++) {
         seccomp_rule_add(ctx, SCMP_ACT_ALLOW, calls[i], 0);
     }
 }
@@ -19,14 +18,14 @@ int BASIC_CALLS[] = {SCMP_SYS(read), SCMP_SYS(fstat),
                     SCMP_SYS(sysinfo), SCMP_SYS(write),
                     SCMP_SYS(writev), SCMP_SYS(lseek),
                     SCMP_SYS(open), SCMP_SYS(openat),
-                    SCMP_SYS(clock_gettime)};
+                    SCMP_SYS(clock_gettime), -1};
 
 
 void basicFilter(scmp_filter_ctx filter) {
     allowCalls(filter, BASIC_CALLS);
 }
 
-scmp_filter_ctx generateFilter(const char* key) {
+scmp_filter_ctx generateFilter(const char* key, const char* execPath) {
     if (strncmp(key, "none", 5) == 0) {
         return seccomp_init(SCMP_ACT_ALLOW);
     }
@@ -36,7 +35,7 @@ scmp_filter_ctx generateFilter(const char* key) {
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sigreturn), 0);
     seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);
-    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(execve), 0);
+    seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(execve), 1, SCMP_A0(SCMP_CMP_EQ, (scmp_datum_t)(execPath)));
 
     if (strncmp(key, "basic", 6)==0) {
         basicFilter(ctx);
