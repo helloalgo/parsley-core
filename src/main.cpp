@@ -1,10 +1,14 @@
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <iomanip>
 #include <string>
 #include <vector>
 #include "cxxopts.hpp"
 #include "runner.hpp"
+#include "json.hpp"
 #include "util.hpp"
+using json = nlohmann::json;
 
 int main(int argc, char** argv) {
     cxxopts::Options options("parsley-run", "Run a binary with resource limitations");
@@ -67,4 +71,40 @@ int main(int argc, char** argv) {
     RunResult res;
     run_child(args, res);
     describe(res);
+    json resultJson = {
+        {"result", {
+            {"pid", res.pid},
+            {"message", res.message},
+            {"flags", {
+                {"complete", res.complete},
+                {"signaled", res.signaled},
+                {"exited", res.exited},
+                {"stopped", res.stopped},
+                {"stop_signal", res.stop_signal},
+                {"term_signal", res.term_signal},
+                {"error", res.error},
+                {"exit_code", res.exit_code}
+            }},
+            {"cpu_time", res.cpu_time},
+            {"wall_time", res.real_time},
+            {"memory", res.memory}
+        }},
+        {"args", {
+            {"seccomp_policy", args.seccomp_policy},
+            {"files", {
+                {"input", file_str(args.input)},
+                {"output", file_str(args.output)},
+                {"error", file_str(args.error)}
+            }},
+            {"max_cpu_time", args.max_cpu_time},
+            {"max_real_time", args.max_real_time},
+            {"max_process_count", args.max_process_count},
+            {"max_memory", args.max_memory_size},
+            {"max_stack", args.max_stack_size},
+            {"max_write", args.max_write_size}
+        }}
+    };
+    std::ofstream o("result.json");
+    o << std::setw(4) << resultJson << std::endl;
+    o.close();
 }

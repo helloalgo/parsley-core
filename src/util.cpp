@@ -1,5 +1,6 @@
 #include <cstdarg>
 #include <cstdlib>
+#include <string>
 #include "util.hpp"
 
 bool log_debug = false;
