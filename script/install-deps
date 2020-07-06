@@ -1,0 +1,7 @@
+#!/bin/bash
+cd ..
+wget -O include/cxxopts.hpp https://raw.githubusercontent.com/jarro2783/cxxopts/v2.2.0/include/cxxopts.hpp
+wget -O include/json.hpp https://github.com/nlohmann/json/releases/download/v3.8.0/json.hpp
+cd script
+
+# cxxopts https://raw.githubusercontent.com/jarro2783/cxxopts/v2.2.0/include/cxxopts.hpp
