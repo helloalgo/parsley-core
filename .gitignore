@@ -11,5 +11,8 @@ callgrind*
 include/json.hpp
 include/cxxopts.hpp
 result.json
+stdout.txt
+stderr.txt
+stdin.txt
 
 __pycache__
