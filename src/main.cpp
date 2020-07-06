@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
     RunArgs args;
 
     if (result.count("stdin")) {
-        args.input = fopen(result["stdin"].as<std::string>().c_str(), "w");
+        args.input = fopen(result["stdin"].as<std::string>().c_str(), "r");
     } else {
         args.input = nullptr;
     }
