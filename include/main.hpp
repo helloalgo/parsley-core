@@ -1,11 +1,9 @@
-#ifndef RUNNER_H_
-#define RUNNER_H_
-
 #include <cstdio>
+#include <pthread.h>
 #include <seccomp.h>
-#include <vector>
 #include <unistd.h>
-
+#include <vector>
+#define BUF_SIZE 512
 
 struct RunArgs {
     int max_cpu_time; // ms
@@ -71,21 +69,19 @@ struct RunResult {
     int term_signal;
 };
 
-struct SharedError {
+struct ChildError {
+    bool has_error;
     RunError error;
     int proc_errno;
 };
 
-void allowCalls(scmp_filter_ctx ctx, std::vector<int> calls);
+void allowCalls(scmp_filter_ctx ctx, int calls[]);
 scmp_filter_ctx generateFilter(const char* key, const char* execPath);
 
-void run_child(RunArgs args, RunResult &result);
-void child_process(const RunArgs& args, SharedError* error_mem);
-void watch_child(const RunArgs& args, pthread_t time_thread, RunResult &result, const SharedError* error_mem);
 
+// util
 void set_log_debug(bool mode);
 void describe(const RunResult& result);
 void describe(const RunArgs& args);
 char* file_str(FILE* file);
-
-#endif
+void verdict_run_result(RunResult &result, const RunArgs &args);
