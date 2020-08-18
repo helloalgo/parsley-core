@@ -138,6 +138,8 @@ RunResult* watch_child(pid_t pid, pthread_t time_thread, const RunArgs& args, co
     auto startTime = std::chrono::steady_clock::now();
     RunResult* result = new RunResult();
     result->message = new char[BUF_SIZE];
+    result->pid = pid;
+    result->complete = false;
     rusage usage;
     int status;
     pid_t waitResult = wait4(pid, &status, 0, &usage);
@@ -151,6 +153,7 @@ RunResult* watch_child(pid_t pid, pthread_t time_thread, const RunArgs& args, co
     if (!time_mem->exited) {
         pthread_kill(time_thread, SIGINT);
     }
+    result->complete = true;
     result->real_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
     result->cpu_time = usage.ru_utime.tv_sec*1000 + usage.ru_utime.tv_usec/1000;
     result->memory = usage.ru_maxrss;
