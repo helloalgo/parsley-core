@@ -83,5 +83,6 @@ scmp_filter_ctx generateFilter(const char* key, const char* execPath);
 void set_log_debug(bool mode);
 void describe(const RunResult& result);
 void describe(const RunArgs& args);
+template<typename... Args> int write_log(const char* format, Args... args);
 char* file_str(FILE* file);
 void verdict_run_result(RunResult &result, const RunArgs &args);

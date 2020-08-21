@@ -32,13 +32,17 @@ struct timeout_killer_args {
 };
 
 void handle_interrupt(int signo) {
-    if (signo == SIGINT) exit(0);
+    if (signo == SIGINT) exit(11);
 }
 
 void* timeout_killer(timeout_killer_args* args) {
     struct sigaction act;
+    sigset_t mask;
     act.sa_handler = handle_interrupt;
     sigaction(SIGINT, &act, NULL);
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGINT);
+    pthread_sigmask(SIG_BLOCK, &mask, NULL);
     timespec time;
     time.tv_nsec = args->limit_nsec % 1000000000LL;
     time.tv_sec = args->limit_nsec / 1000000000LL;
@@ -138,6 +142,8 @@ RunResult* watch_child(pid_t pid, pthread_t time_thread, const RunArgs& args, co
     auto startTime = std::chrono::steady_clock::now();
     RunResult* result = new RunResult();
     result->message = new char[BUF_SIZE];
+    result->pid = pid;
+    result->complete = false;
     rusage usage;
     int status;
     pid_t waitResult = wait4(pid, &status, 0, &usage);
@@ -151,6 +157,7 @@ RunResult* watch_child(pid_t pid, pthread_t time_thread, const RunArgs& args, co
     if (!time_mem->exited) {
         pthread_kill(time_thread, SIGINT);
     }
+    result->complete = true;
     result->real_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
     result->cpu_time = usage.ru_utime.tv_sec*1000 + usage.ru_utime.tv_usec/1000;
     result->memory = usage.ru_maxrss;
@@ -190,6 +197,7 @@ RunResult* run(RunArgs args) {
         snprintf(result->message, BUF_SIZE, "Error: FORK_FAILED: %s", strerror(errno));
         return result;
     }
+    write_log("Forked: %d\n", pid);
     pthread_t tid = 0;
     timeout_killer_args killer_args;
     killer_args.pid = pid;
@@ -282,42 +290,46 @@ int main(int argc, char** argv) {
     RunResult* res = run(args);
     describe(*res);
 
-    json resultJson = {
-        {"result", {
-            {"pid", res->pid},
-            {"message", res->message},
-            {"flags", {
-                {"complete", res->complete},
-                {"signaled", res->signaled},
-                {"exited", res->exited},
-                {"stopped", res->stopped},
-                {"stop_signal", res->stop_signal},
-                {"term_signal", res->term_signal},
+    try {
+        json resultJson = {
+            {"result", {
+                {"pid", res->pid},
+                {"message", res->message},
+                {"flags", {
+                    {"complete", res->complete},
+                    {"signaled", res->signaled},
+                    {"exited", res->exited},
+                    {"stopped", res->stopped},
+                    {"stop_signal", res->stop_signal},
+                    {"term_signal", res->term_signal},
+                }},
+                {"error", res->error},
+                {"exit_code", res->exit_code},
+                {"violation", res->violation},
+                {"cpu_time", res->cpu_time},
+                {"wall_time", res->real_time},
+                {"memory", res->memory}
             }},
-            {"error", res->error},
-            {"exit_code", res->exit_code},
-            {"violation", res->violation},
-            {"cpu_time", res->cpu_time},
-            {"wall_time", res->real_time},
-            {"memory", res->memory}
-        }},
-        {"args", {
-            {"command", command_args},
-            {"seccomp_policy", args.seccomp_policy},
-            {"files", {
-                {"input", file_str(args.input)},
-                {"output", file_str(args.output)},
-                {"error", file_str(args.error)}
-            }},
-            {"max_cpu_time", args.max_cpu_time},
-            {"max_real_time", args.max_real_time},
-            {"max_process_count", args.max_process_count},
-            {"max_memory", args.max_memory_size},
-            {"max_stack", args.max_stack_size},
-            {"max_write", args.max_write_size}
-        }}
-    };
-    std::ofstream o("result.json");
-    o << std::setw(4) << resultJson << std::endl;
-    o.close();
+            {"args", {
+                {"command", command_args},
+                {"seccomp_policy", args.seccomp_policy},
+                {"files", {
+                    {"input", file_str(args.input)},
+                    {"output", file_str(args.output)},
+                    {"error", file_str(args.error)}
+                }},
+                {"max_cpu_time", args.max_cpu_time},
+                {"max_real_time", args.max_real_time},
+                {"max_process_count", args.max_process_count},
+                {"max_memory", args.max_memory_size},
+                {"max_stack", args.max_stack_size},
+                {"max_write", args.max_write_size}
+            }}
+        };
+        std::ofstream o("result.json");
+        o << std::setw(4) << resultJson << std::endl;
+        o.close();
+    } catch (json::exception& e) {
+        write_log(e.what());
+    }
 }
