@@ -5,12 +5,12 @@
 
 void allowCalls(scmp_filter_ctx ctx, int calls[]) {
     for (int i=0; calls[i]!=-1; i++) {
+        fflush(stdout);
         seccomp_rule_add(ctx, SCMP_ACT_ALLOW, calls[i], 0);
     }
 }
 
 int BASIC_CALLS[] = {SCMP_SYS(read), SCMP_SYS(fstat),
-
                     SCMP_SYS(munmap), SCMP_SYS(uname),
                     SCMP_SYS(arch_prctl), SCMP_SYS(brk),
                     SCMP_SYS(access), SCMP_SYS(exit_group),
@@ -18,7 +18,9 @@ int BASIC_CALLS[] = {SCMP_SYS(read), SCMP_SYS(fstat),
                     SCMP_SYS(sysinfo), SCMP_SYS(write),
                     SCMP_SYS(writev), SCMP_SYS(lseek),
                     SCMP_SYS(open), SCMP_SYS(openat),
-                    SCMP_SYS(clock_gettime), -1};
+                    SCMP_SYS(clock_gettime),
+                    SCMP_SYS(mmap), SCMP_SYS(mprotect), // this probably isn't safe
+                     -1};
 
 
 void basicFilter(scmp_filter_ctx filter) {

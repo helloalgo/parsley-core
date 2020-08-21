@@ -20,24 +20,28 @@ char* file_str(FILE* file) {
     return (char*)(file == nullptr ? "default" : "given");
 }
 
+template<typename... Args> int write_log(const char* format, Args... args) {
+    return fprintf(log_debug ? stdout : log_output, format, args...);
+}
+
 void describe(const RunResult& res) {
-    fprintf(log_debug ? stdout : log_output, "[RunResult %p]\n", &res);
-    fprintf(log_debug ? stdout : log_output, "PID %d, run result from runner: %s\n", res.pid, res.message);
-    fprintf(log_debug ? stdout : log_output, "[Flags]\n");
-    fprintf(log_debug ? stdout : log_output, "Complete%3d Signaled%3d    Exited%3d Stopped%3d Stop Sig%3d\n", res.complete, res.signaled, res.exited, res.stopped, res.stop_signal);
-    fprintf(log_debug ? stdout : log_output, "Term Sig%3d    Error%3d      Exit%3d   Viol.%3d\n", res.term_signal, res.error, res.exit_code, res.violation);
-    fprintf(log_debug ? stdout : log_output, "[Metrics]\n");
-    fprintf(log_debug ? stdout : log_output, "CPU time %d\n", res.cpu_time);
-    fprintf(log_debug ? stdout : log_output, "Real(wall) time %d\n", res.real_time);
-    fprintf(log_debug ? stdout : log_output, "Memory %ld\n", res.memory);
+    write_log("[RunResult %p]\n", &res);
+    write_log("PID %d, run result from runner: %s\n", res.pid, res.message);
+    write_log("[Flags]\n");
+    write_log("Complete%3d Signaled%3d    Exited%3d Stopped%3d Stop Sig%3d\n", res.complete, res.signaled, res.exited, res.stopped, res.stop_signal);
+    write_log("Term Sig%3d    Error%3d      Exit%3d   Viol.%3d\n", res.term_signal, res.error, res.exit_code, res.violation);
+    write_log("[Metrics]\n");
+    write_log("CPU time %d\n", res.cpu_time);
+    write_log("Real(wall) time %d\n", res.real_time);
+    write_log("Memory %ld\n", res.memory);
 }
 
 void describe(const RunArgs& args) {
-    fprintf(log_debug ? stdout : log_output, "[RunArgs %p]\n", &args);
-    fprintf(log_debug ? stdout : log_output, "ptrace %3d seccomp %s\n", args.use_ptrace, args.seccomp_policy);
-    fprintf(log_debug ? stdout : log_output, "stdin %s / stdout %s / stderr %s\n", file_str(args.input), file_str(args.output), file_str(args.error));
-    fprintf(log_debug ? stdout : log_output, "cputime %dms realtime %dms\n", args.max_cpu_time, args.max_real_time);
-    fprintf(log_debug ? stdout : log_output, "nproc %ld mem %ldkb stack %ldkb write %ldkb\n", args.max_process_count, args.max_memory_size, args.max_stack_size, args.max_write_size);
+    write_log("[RunArgs %p]\n", &args);
+    write_log("ptrace %3d seccomp %s\n", args.use_ptrace, args.seccomp_policy);
+    write_log("stdin %s / stdout %s / stderr %s\n", file_str(args.input), file_str(args.output), file_str(args.error));
+    write_log("cputime %dms realtime %dms\n", args.max_cpu_time, args.max_real_time);
+    write_log("nproc %ld mem %ldkb stack %ldkb write %ldkb\n", args.max_process_count, args.max_memory_size, args.max_stack_size, args.max_write_size);
 }
 
 void verdict_run_result(RunResult &result, const RunArgs &args) {
