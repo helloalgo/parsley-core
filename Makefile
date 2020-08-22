@@ -25,3 +25,6 @@ init:
 	mkdir -p $(OBJ_PREFIX)/runner
 
 all: init $(TARGET)
+
+run-test:
+	cd test && python -m unittest run.py
