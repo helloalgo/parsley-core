@@ -151,7 +151,7 @@ RunResult* watch_child(pid_t pid, pthread_t time_thread, const RunArgs& args, co
         kill(pid, SIGKILL);
         result->error = RunError::WAIT_FAILED;
         snprintf(result->message, BUF_SIZE, "Error: WAIT_FAILED: %s", strerror(errno));
-        return;
+        return result;
     }
     auto endTime = std::chrono::steady_clock::now();
     if (!time_mem->exited) {
@@ -291,6 +291,8 @@ int main(int argc, char** argv) {
     describe(*res);
 
     try {
+        char cwd[1025];
+        getcwd(cwd, sizeof(cwd));
         json resultJson = {
             {"result", {
                 {"pid", res->pid},
@@ -324,6 +326,9 @@ int main(int argc, char** argv) {
                 {"max_memory", args.max_memory_size},
                 {"max_stack", args.max_stack_size},
                 {"max_write", args.max_write_size}
+            }},
+            {"env", {
+                {"workdir", cwd}
             }}
         };
         std::ofstream o("result.json");
