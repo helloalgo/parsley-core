@@ -189,7 +189,9 @@ void sigterm_handler(int signo) {
         kill(child_pid, SIGKILL);
         waitpid(child_pid, NULL, 0);
     }
-    exit(1);
+    // SIGKILL로 죽은 효과를 내기 때문에 exit()과 다름, app에서 시그널로 죽었는지 확인하기 용이
+    // https://pkg.go.dev/os#ProcessState.ExitCode
+    kill(getpid(), SIGKILL);
 }
 
 RunResult* run(RunArgs args) {
