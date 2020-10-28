@@ -149,6 +149,7 @@ RunResult* watch_child(pid_t pid, pthread_t time_thread, const RunArgs& args, co
     pid_t waitResult = wait4(pid, &status, 0, &usage);
     if (waitResult == -1) {
         kill(pid, SIGKILL);
+        waitpid(pid, NULL, 0);
         result->error = RunError::WAIT_FAILED;
         snprintf(result->message, BUF_SIZE, "Error: WAIT_FAILED: %s", strerror(errno));
         return result;
@@ -156,6 +157,10 @@ RunResult* watch_child(pid_t pid, pthread_t time_thread, const RunArgs& args, co
     auto endTime = std::chrono::steady_clock::now();
     if (!time_mem->exited) {
         pthread_kill(time_thread, SIGINT);
+    }
+    if (WIFSTOPPED(status) != 0) {
+        kill(pid, SIGKILL);
+        waitpid(pid, NULL, 0);
     }
     result->complete = true;
     result->real_time = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime).count();
@@ -207,11 +212,14 @@ RunResult* run(RunArgs args) {
         result->error = RunError::FORK_FAILED;
         snprintf(result->message, BUF_SIZE, "Error: PTHREAD_FORK_FAILED: %s", strerror(errno));
         kill(pid, SIGKILL);
+        waitpid(pid, NULL, 0);
         munmap(error_mem, sizeof(ChildError));
         return result;
     }
     RunResult* result = watch_child(pid, tid, args, error_mem, &killer_args);
     munmap(error_mem, sizeof(ChildError));
+    // Ensure child process has exited
+    waitpid(pid, NULL, 0);
     return result;
 }
 
@@ -245,7 +253,6 @@ int main(int argc, char** argv) {
     set_log_debug(result["debug"].as<bool>());
 
     RunArgs args;
-
     if (result.count("stdin")) {
         args.input = fopen(result["stdin"].as<std::string>().c_str(), "r");
     } else {

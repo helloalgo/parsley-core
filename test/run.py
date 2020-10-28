@@ -96,12 +96,12 @@ class TimeTestCase(unittest.TestCase):
 class BOJ2493Case(unittest.TestCase):
     def setUp(self):
         build_binary("boj2493.cpp")
-        f = open("stdin.txt", "w")
+        f = open("test/stdin.txt", "w")
         f.write("5\n6 9 5 7 4")
         f.close()
     def test(self):
         self.result, self.stdout, self.stderr = run_binary("boj2493", {
-            "stdin": "stdin.txt"
+            "stdin": "/tt/test/stdin.txt",
         })
         self.assertEqual(self.result["result"]["error"], 0)
         self.assertEqual(self.result["result"]["flags"]["complete"], True)
