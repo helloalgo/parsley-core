@@ -137,7 +137,6 @@ void child_process(const RunArgs& args, ChildError* error_mem) {
     exitWithError(RunError::EXEC_FAILED);
 }
 
-
 RunResult* watch_child(pid_t pid, pthread_t time_thread, const RunArgs& args, const ChildError* error_mem, const timeout_killer_args* time_mem) {
     auto startTime = std::chrono::steady_clock::now();
     RunResult* result = new RunResult();
@@ -181,6 +180,18 @@ RunResult* watch_child(pid_t pid, pthread_t time_thread, const RunArgs& args, co
     return result;
 }
 
+// 종료 시그널 핸들러에서 사용하기 위한 child process pid
+// 반드시 (1) fork 직후 pid를 설정하고 (2) 이후에 수정하지 말아야 합니다!!!
+pid_t child_pid = -1;
+
+void sigterm_handler(int signo) {
+    if (child_pid != -1) {
+        kill(child_pid, SIGKILL);
+        waitpid(child_pid, NULL, 0);
+    }
+    exit(1);
+}
+
 RunResult* run(RunArgs args) {
   // Create shared memory
     auto error_mem = (ChildError*)mmap(0, sizeof(ChildError), PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
@@ -200,6 +211,16 @@ RunResult* run(RunArgs args) {
         RunResult* result = new RunResult();
         result->error = RunError::FORK_FAILED;
         snprintf(result->message, BUF_SIZE, "Error: FORK_FAILED: %s", strerror(errno));
+        return result;
+    }
+    // Set signal handler
+    child_pid = pid;
+    if (signal(SIGTERM, sigterm_handler) == SIG_ERR) {
+        RunResult* result = new RunResult();
+        result->error = RunError::SIGNAL_FAILED;
+        snprintf(result->message, BUF_SIZE, "Error: SIGNAL_FAILED");
+        kill(pid, SIGKILL);
+        waitpid(pid, NULL, 0);
         return result;
     }
     write_log("Forked: %d\n", pid);

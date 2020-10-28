@@ -47,7 +47,8 @@ enum RunError {
     EXEC_FAILED = 8,
     DUP_FAILED = 9,
     MMAP_FAILED = 10,
-    SETGID_FAILED = 11
+    SETGID_FAILED = 11,
+    SIGNAL_FAILED = 12
 };
 
 struct RunResult {
