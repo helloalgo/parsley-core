@@ -57,6 +57,11 @@ void verdict_run_result(RunResult &result, const RunArgs &args) {
         snprintf(result.message, BUF_SIZE, "Time Limit Exceeded");
         return;
     }
+    if (result.term_signal == SIGFPE) {
+        result.violation = RunViolation::RUNTIME;
+        snprintf(result.message, BUF_SIZE, "Runtime Error (SIGFPE)");
+        return;
+    }
     if (result.term_signal == SIGSEGV) {
         if (args.max_memory_size > 0 && result.memory > args.max_memory_size) {
             result.violation = RunViolation::MEMORY;
