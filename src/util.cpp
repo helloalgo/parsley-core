@@ -20,8 +20,12 @@ char* file_str(FILE* file) {
     return (char*)(file == nullptr ? "default" : "given");
 }
 
-template<typename... Args> int write_log(const char* format, Args... args) {
-    return fprintf(log_debug ? stdout : log_output, format, args...);
+int write_log(const char* format, ...) {
+    va_list args;
+    va_start(args, format);
+    int result = vfprintf(log_debug ? stdout : log_output, format, args);
+    va_end(args);
+    return result;
 }
 
 void describe(const RunResult& res) {
